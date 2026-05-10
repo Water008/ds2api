@@ -9,8 +9,8 @@ Thanks for your interest in contributing to DS2API!
 ### Prerequisites
 
 - Go 1.26+
-- Node.js 20+ (for WebUI development)
-- npm (bundled with Node.js)
+- Node.js `20.19+` or `22.12+` (for WebUI development; CI / Docker builds use Node 24)
+- npm (bundled with Node.js; 10+ recommended)
 
 ### Backend Development
 
@@ -25,7 +25,8 @@ cp config.example.json config.json
 
 # 3. Run backend
 go run ./cmd/ds2api
-# Default: http://localhost:5001
+# Local access: http://127.0.0.1:5001
+# Actual bind: 0.0.0.0:5001, so LAN access is available via your private IP
 ```
 
 ### Frontend Development (WebUI)
@@ -35,11 +36,12 @@ go run ./cmd/ds2api
 cd webui
 
 # 2. Install dependencies
-npm install
+npm ci
 
 # 3. Start dev server (hot reload)
 npm run dev
 # Default: http://localhost:5173, auto-proxies API to backend
+# host: 0.0.0.0 is not configured, so LAN access is not enabled by default
 ```
 
 WebUI tech stack:
@@ -57,9 +59,11 @@ docker-compose -f docker-compose.dev.yml up
 
 | Language | Standards |
 | --- | --- |
-| **Go** | Run `gofmt` and ensure `go test ./...` passes before committing |
+| **Go** | Run `gofmt -w` after editing Go files; before committing, run `./scripts/lint.sh` (format check + golangci-lint) |
 | **JavaScript/React** | Follow existing project style (functional components) |
 | **Commit messages** | Use semantic prefixes: `feat:`, `fix:`, `docs:`, `refactor:`, `style:`, `perf:`, `chore:` |
+
+Do not silently ignore cleanup errors from I/O-style calls such as `Close`, `Flush`, or `Sync`; return them when possible, otherwise log them explicitly.
 
 ## Submitting a PR
 
@@ -83,67 +87,24 @@ Manually build WebUI to `static/admin/`:
 ## Running Tests
 
 ```bash
-# Go + Node unit tests (recommended)
+# Local PR gates (kept aligned with the quality-gates workflow)
+./scripts/lint.sh
+./tests/scripts/check-refactor-line-gate.sh
 ./tests/scripts/run-unit-all.sh
+npm run build --prefix webui
 
-# End-to-end live tests (real accounts)
+# End-to-end live tests (real accounts; recommended for releases or high-risk changes)
 ./tests/scripts/run-live.sh
 ```
 
 ## Project Structure
 
-```text
-ds2api/
-├── app/                     # Shared HTTP handler assembly (local + serverless)
-├── cmd/
-│   ├── ds2api/              # Local/container entrypoint
-│   └── ds2api-tests/        # End-to-end testsuite entrypoint
-├── api/
-│   ├── index.go             # Vercel Serverless Go entry
-│   ├── chat-stream.js       # Vercel Node.js stream relay
-│   └── (rewrite targets in vercel.json)
-├── internal/
-│   ├── account/             # Account pool and concurrency queue
-│   ├── adapter/
-│   │   ├── openai/          # OpenAI adapter
-│   │   ├── claude/          # Claude adapter
-│   │   └── gemini/          # Gemini adapter
-│   ├── admin/               # Admin API handlers
-│   ├── auth/                # Auth and JWT
-│   ├── claudeconv/          # Claude message conversion
-│   ├── compat/              # Go-version compatibility and regression helpers
-│   ├── config/              # Config loading, validation, and hot-reload
-│   ├── deepseek/            # DeepSeek client, PoW WASM
-│   ├── js/                  # Node runtime stream/compat logic
-│   ├── devcapture/          # Dev packet capture
-│   ├── format/              # Output formatting
-│   ├── prompt/              # Prompt building
-│   ├── server/              # HTTP routing (chi router)
-│   ├── sse/                 # SSE parsing utilities
-│   ├── stream/              # Unified stream consumption engine
-│   ├── testsuite/           # Testsuite framework and scenario orchestration
-│   ├── translatorcliproxy/  # CLIProxy bridge and stream writer
-│   ├── util/                # Common utilities
-│   ├── version/             # Version parsing and comparison
-│   └── webui/               # WebUI static hosting
-├── webui/                   # React WebUI source
-│   └── src/
-│       ├── app/             # Routing, auth, config state
-│       ├── features/        # Feature modules
-│       ├── components/      # Shared components
-│       └── locales/         # Language packs
-├── scripts/                 # Build and test scripts
-├── tests/
-│   ├── compat/              # Compatibility fixtures and expected outputs
-│   ├── node/                # Node-side unit tests
-│   └── scripts/             # Test script entrypoints (unit/e2e)
-├── plans/                   # Plans, gates, and manual smoke-test records
-├── static/admin/            # WebUI build output (not committed)
-├── Dockerfile               # Multi-stage build
-├── docker-compose.yml       # Production
-├── docker-compose.dev.yml   # Development
-└── vercel.json              # Vercel config
-```
+To avoid documentation drift, directory layout and module responsibilities were moved to:
+
+- [docs/ARCHITECTURE.en.md](./ARCHITECTURE.en.md)
+- [docs/README.md](./README.md)
+
+Before contributing, review the architecture doc sections for request flow and `internal/` module boundaries.
 
 ## Reporting Issues
 

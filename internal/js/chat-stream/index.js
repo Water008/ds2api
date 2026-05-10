@@ -6,7 +6,11 @@ const {
 const {
   parseChunkForContent,
   extractContentRecursive,
+  filterLeakedContentFilterParts,
+  hasContentFilterStatus,
+  extractAccumulatedTokenUsage,
   shouldSkipPath,
+  stripReferenceMarkers,
 } = require('./sse_parse');
 const {
   resolveToolcallPolicy,
@@ -14,9 +18,11 @@ const {
   normalizePreparedToolNames,
   boolDefaultTrue,
   filterIncrementalToolCallDeltasByAllowed,
+  resetStreamToolCallState,
 } = require('./toolcall_policy');
 const {
   estimateTokens,
+  buildUsage,
 } = require('./token_usage');
 const {
   setCorsHeaders,
@@ -29,9 +35,12 @@ const {
 const {
   handleVercelStream,
 } = require('./vercel_stream');
+const {
+  trimContinuationOverlap,
+} = require('./dedupe');
 
 async function handler(req, res) {
-  setCorsHeaders(res);
+  setCorsHeaders(res, req);
   if (req.method === 'OPTIONS') {
     res.statusCode = 204;
     res.end();
@@ -79,7 +88,7 @@ function isVercelRuntime() {
 
 function isNodeStreamSupportedPath(rawURL) {
   const path = extractPathname(rawURL);
-  return path === '/v1/chat/completions';
+  return path === '/v1/chat/completions' || path === '/chat/completions';
 }
 
 function extractPathname(rawURL) {
@@ -100,13 +109,20 @@ module.exports.__test = {
   parseChunkForContent,
   extractContentRecursive,
   shouldSkipPath,
+  stripReferenceMarkers,
   asString,
   resolveToolcallPolicy,
   formatIncrementalToolCallDeltas,
   normalizePreparedToolNames,
   boolDefaultTrue,
   filterIncrementalToolCallDeltasByAllowed,
+  resetStreamToolCallState,
   estimateTokens,
+  buildUsage,
+  filterLeakedContentFilterParts,
+  hasContentFilterStatus,
+  extractAccumulatedTokenUsage,
   isNodeStreamSupportedPath,
   extractPathname,
+  trimContinuationOverlap,
 };

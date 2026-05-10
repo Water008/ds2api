@@ -6,6 +6,7 @@ import ApiKeysPanel from './ApiKeysPanel'
 import AccountsTable from './AccountsTable'
 import AddKeyModal from './AddKeyModal'
 import AddAccountModal from './AddAccountModal'
+import EditAccountModal from './EditAccountModal'
 
 export default function AccountManagerContainer({ config, onRefresh, onMessage, authFetch }) {
     const { t } = useI18n()
@@ -30,9 +31,19 @@ export default function AccountManagerContainer({ config, onRefresh, onMessage, 
 
     const {
         showAddKey,
-        setShowAddKey,
+        openAddKey,
+        openEditKey,
+        closeKeyModal,
+        editingKey,
         showAddAccount,
-        setShowAddAccount,
+        openAddAccount,
+        closeAddAccount,
+        showEditAccount,
+        editingAccount,
+        editAccount,
+        setEditAccount,
+        openEditAccount,
+        closeEditAccount,
         newKey,
         setNewKey,
         copiedKey,
@@ -45,13 +56,16 @@ export default function AccountManagerContainer({ config, onRefresh, onMessage, 
         batchProgress,
         sessionCounts,
         deletingSessions,
+        updatingProxy,
         addKey,
         deleteKey,
         addAccount,
+        updateAccount,
         deleteAccount,
         testAccount,
         testAllAccounts,
         deleteAllSessions,
+        updateAccountProxy,
     } = useAccountActions({
         apiFetch,
         t,
@@ -92,7 +106,8 @@ export default function AccountManagerContainer({ config, onRefresh, onMessage, 
                 config={config}
                 keysExpanded={keysExpanded}
                 setKeysExpanded={setKeysExpanded}
-                setShowAddKey={setShowAddKey}
+                onAddKey={openAddKey}
+                onEditKey={openEditKey}
                 copiedKey={copiedKey}
                 setCopiedKey={setCopiedKey}
                 onDeleteKey={deleteKey}
@@ -107,16 +122,20 @@ export default function AccountManagerContainer({ config, onRefresh, onMessage, 
                 batchProgress={batchProgress}
                 sessionCounts={sessionCounts}
                 deletingSessions={deletingSessions}
+                updatingProxy={updatingProxy}
                 totalAccounts={totalAccounts}
                 page={page}
                 pageSize={pageSize}
                 totalPages={totalPages}
                 resolveAccountIdentifier={resolveAccountIdentifier}
+                proxies={config?.proxies || []}
                 onTestAll={testAllAccounts}
-                onShowAddAccount={() => setShowAddAccount(true)}
+                onShowAddAccount={openAddAccount}
+                onEditAccount={openEditAccount}
                 onTestAccount={testAccount}
                 onDeleteAccount={deleteAccount}
                 onDeleteAllSessions={deleteAllSessions}
+                onUpdateAccountProxy={updateAccountProxy}
                 onPrevPage={() => fetchAccounts(page - 1)}
                 onNextPage={() => fetchAccounts(page + 1)}
                 onPageSizeChange={changePageSize}
@@ -128,10 +147,11 @@ export default function AccountManagerContainer({ config, onRefresh, onMessage, 
             <AddKeyModal
                 show={showAddKey}
                 t={t}
+                editingKey={editingKey}
                 newKey={newKey}
                 setNewKey={setNewKey}
                 loading={loading}
-                onClose={() => setShowAddKey(false)}
+                onClose={closeKeyModal}
                 onAdd={addKey}
             />
 
@@ -141,8 +161,19 @@ export default function AccountManagerContainer({ config, onRefresh, onMessage, 
                 newAccount={newAccount}
                 setNewAccount={setNewAccount}
                 loading={loading}
-                onClose={() => setShowAddAccount(false)}
+                onClose={closeAddAccount}
                 onAdd={addAccount}
+            />
+
+            <EditAccountModal
+                show={showEditAccount}
+                t={t}
+                editingAccount={editingAccount}
+                editAccount={editAccount}
+                setEditAccount={setEditAccount}
+                loading={loading}
+                onClose={closeEditAccount}
+                onSave={updateAccount}
             />
         </div>
     )

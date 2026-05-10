@@ -1,16 +1,19 @@
 package sse
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // LineResult is the normalized parse result for one DeepSeek SSE line.
 type LineResult struct {
-	Parsed        bool
-	Stop          bool
-	ContentFilter bool
-	ErrorMessage  string
-	Parts         []ContentPart
-	NextType      string
-	OutputTokens  int
+	Parsed                     bool
+	Stop                       bool
+	ContentFilter              bool
+	ErrorMessage               string
+	Parts                      []ContentPart
+	ToolDetectionThinkingParts []ContentPart
+	NextType                   string
+	ResponseMessageID          int
 }
 
 // ParseDeepSeekContentLine centralizes one-line DeepSeek SSE parsing for both
@@ -37,7 +40,6 @@ func ParseDeepSeekContentLine(raw []byte, thinkingEnabled bool, currentType stri
 			Stop:          true,
 			ContentFilter: true,
 			NextType:      currentType,
-			OutputTokens:  extractAccumulatedTokenUsage(chunk),
 		}
 	}
 	if hasContentFilterStatus(chunk) {
@@ -46,16 +48,19 @@ func ParseDeepSeekContentLine(raw []byte, thinkingEnabled bool, currentType stri
 			Stop:          true,
 			ContentFilter: true,
 			NextType:      currentType,
-			OutputTokens:  extractAccumulatedTokenUsage(chunk),
 		}
 	}
-	parts, finished, nextType := ParseSSEChunkForContent(chunk, thinkingEnabled, currentType)
+	parts, detectionThinkingParts, finished, nextType := ParseSSEChunkForContentDetailed(chunk, thinkingEnabled, currentType)
 	parts = filterLeakedContentFilterParts(parts)
+	detectionThinkingParts = filterLeakedContentFilterParts(detectionThinkingParts)
+	var respMsgID int
+	observeResponseMessageID(chunk, &respMsgID)
 	return LineResult{
-		Parsed:   true,
-		Stop:     finished,
-		Parts:    parts,
-		NextType: nextType,
-		OutputTokens: extractAccumulatedTokenUsage(chunk),
+		Parsed:                     true,
+		Stop:                       finished,
+		Parts:                      parts,
+		ToolDetectionThinkingParts: detectionThinkingParts,
+		NextType:                   nextType,
+		ResponseMessageID:          respMsgID,
 	}
 }
